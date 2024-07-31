@@ -20,6 +20,20 @@ const qrcode_1 = __importDefault(require("qrcode"));
 const conenctor_1 = require("./ton-connect/conenctor");
 const sdk_1 = require("@tonconnect/sdk");
 const AT_WALLET_APP_NAME = "telegram-wallet";
+bot_1.bot.onText(/\/start/, (msg) => __awaiter(void 0, void 0, void 0, function* () {
+    const typechat = msg.chat.type;
+    const chatid = msg.chat.id;
+    if (typechat == "private") {
+        bot_1.bot.sendMessage(chatid, "test", {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "Голосования", callback_data: "test" }],
+                    [{ text: "Подключение кошелька", callback_data: "test2" }],
+                ],
+            },
+        });
+    }
+}));
 bot_1.bot.onText(/\/connect/, (msg) => __awaiter(void 0, void 0, void 0, function* () {
     const chatId = msg.chat.id;
     const wallets = yield (0, wallets_1.getWallets)();
@@ -63,7 +77,7 @@ bot_1.bot.onText(/\/connect/, (msg) => __awaiter(void 0, void 0, void 0, functio
 bot_1.bot.onText(/\/test/, (msg) => {
     bot_1.bot.sendMessage(-1002193156068, "test", {
         reply_markup: {
-            inline_keyboard: [[{ text: "test", url: "tg://user?id=1619511344" }]],
+            inline_keyboard: [[{ text: "Voting", url: "tg://user?id=1619511344" }]],
         },
     });
 });

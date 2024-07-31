@@ -12,6 +12,21 @@ import {
 } from "@tonconnect/sdk";
 
 const AT_WALLET_APP_NAME = "telegram-wallet";
+bot.onText(/\/start/, async (msg) => {
+  const typechat = msg.chat.type;
+  const chatid = msg.chat.id;
+
+  if (typechat == "private") {
+    bot.sendMessage(chatid, "test", {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "Голосования", callback_data: "test" }],
+          [{ text: "Подключение кошелька", callback_data: "test2" }],
+        ],
+      },
+    });
+  }
+});
 
 bot.onText(/\/connect/, async (msg) => {
   const chatId = msg.chat.id;
@@ -71,7 +86,7 @@ bot.onText(/\/connect/, async (msg) => {
 bot.onText(/\/test/, (msg) => {
   bot.sendMessage(-1002193156068, "test", {
     reply_markup: {
-      inline_keyboard: [[{ text: "test", url: "tg://user?id=1619511344" }]],
+      inline_keyboard: [[{ text: "Voting", url: "tg://user?id=1619511344" }]],
     },
   });
 });
