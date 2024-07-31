@@ -2,4 +2,6 @@
   "url": "https://github.com/eftsoons/EstateCollection/",
   "name": "Estate Collection",
   "iconUrl": "https://raw.githubusercontent.com/eftsoons/EstateCollection/main/Img%20collection/Logo.webp",
+  "termsOfUseUrl": "https://ton-connect.github.io/demo-dapp-with-react-ui/terms-of-use.txt",
+  "privacyPolicyUrl": "https://ton-connect.github.io/demo-dapp-with-react-ui/privacy-policy.txt"
 }
