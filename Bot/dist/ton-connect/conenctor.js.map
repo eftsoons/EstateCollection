@@ -1,0 +1,1 @@
+{"version":3,"file":"conenctor.js","sourceRoot":"","sources":["../../src/ton-connect/conenctor.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA,0DAAyC;AACzC,uCAA8C;AAC9C,iDAAmC;AAEnC,SAAgB,YAAY,CAAC,MAAc;IACzC,OAAO,IAAI,aAAU,CAAC;QACpB,WAAW,EAAE,OAAO,CAAC,GAAG,CAAC,YAAY;QACrC,OAAO,EAAE,IAAI,2BAAiB,CAAC,MAAM,CAAC;KACvC,CAAC,CAAC;AACL,CAAC;AALD,oCAKC"}
