@@ -2,126 +2,111 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { bot } from "./bot";
-import { getWalletInfo, getWallets } from "./ton-connect/wallets";
-import QRCode from "qrcode";
 import { getConnector } from "./ton-connect/conenctor";
-import {
-  encodeTelegramUrlParameters,
-  isTelegramUrl,
-  WalletInfoRemote,
-} from "@tonconnect/sdk";
+import { Start, Tonkeeper, Wallet, VotingAll, Voting } from "./button";
+import { CreateVoting, GetAllVoting, VottingButton } from "./voting";
+import lang from "./lang";
+import photo from "./photo";
+import { CHAIN, toUserFriendlyAddress } from "@tonconnect/sdk";
+import axios from "axios";
+import * as process from "process";
 
-const AT_WALLET_APP_NAME = "telegram-wallet";
-bot.onText(/\/start/, async (msg) => {
+bot.on("message", async (msg) => {
   const typechat = msg.chat.type;
   const chatid = msg.chat.id;
+  const lang_code = msg.from?.language_code == "ru" ? "ru" : "eng";
+  const text = msg.text;
 
   if (typechat == "private") {
-    bot.sendMessage(chatid, "test", {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "Голосования", callback_data: "test" }],
-          [{ text: "Подключение кошелька", callback_data: "test2" }],
-        ],
-      },
-    });
-  }
-});
-
-bot.onText(/\/connect/, async (msg) => {
-  const chatId = msg.chat.id;
-  const wallets = await getWallets();
-
-  const connector = getConnector(chatId);
-
-  connector.onStatusChange(async (wallet) => {
-    if (wallet) {
-      const walletName =
-        (await getWalletInfo(wallet.device.appName))?.name ||
-        wallet.device.appName;
-      bot.sendMessage(chatId, `${walletName} wallet connected!`);
+    if (text?.split(" ")[0] == "/start") {
+      Start(chatid, lang_code);
     }
-  });
-
-  const link = connector.connect(wallets);
-  const image = await QRCode.toBuffer(link);
-
-  const atWallet = wallets.find(
-    (wallet) => wallet.appName.toLowerCase() === AT_WALLET_APP_NAME
-  );
-
-  const atWalletLink = atWallet
-    ? addTGReturnStrategy(
-        convertDeeplinkToUniversalLink(link, atWallet?.universalLink),
-        process.env.TELEGRAM_BOT_LINK!
-      )
-    : undefined;
-
-  console.log(atWalletLink);
-
-  bot.sendPhoto(chatId, image, {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: "@wallet",
-            url: atWalletLink,
-          },
-          {
-            text: "Choose a Wallet",
-            callback_data: JSON.stringify({ method: "chose_wallet" }),
-          },
-          {
-            text: "Open Link",
-            url: `https://ton-connect.github.io/open-tc?connect=${encodeURIComponent(
-              link
-            )}`,
-          },
-        ],
-      ],
-    },
-  });
-});
-
-bot.onText(/\/test/, (msg) => {
-  bot.sendMessage(-1002193156068, "test", {
-    reply_markup: {
-      inline_keyboard: [[{ text: "Voting", url: "tg://user?id=1619511344" }]],
-    },
-  });
-});
-
-bot.on("callback_query", (msg) => {
-  console.log(msg);
-});
-
-function addTGReturnStrategy(link: string, strategy: string): string {
-  const parsed = new URL(link);
-  parsed.searchParams.append("ret", strategy);
-  link = parsed.toString();
-
-  const lastParam = link.slice(link.lastIndexOf("&") + 1);
-  return (
-    link.slice(0, link.lastIndexOf("&")) +
-    "-" +
-    encodeTelegramUrlParameters(lastParam)
-  );
-}
-
-function convertDeeplinkToUniversalLink(
-  link: string,
-  walletUniversalLink: string
-): string {
-  const search = new URL(link).search;
-  const url = new URL(walletUniversalLink);
-
-  if (isTelegramUrl(walletUniversalLink)) {
-    const startattach =
-      "tonconnect-" + encodeTelegramUrlParameters(search.slice(1));
-    url.searchParams.append("startattach", startattach);
-  } else {
-    url.search = search;
   }
+});
 
-  return url.toString();
-}
+bot.onText(/\/test/, async (msg) => {
+  const chatid = msg.chat.id;
+  if (chatid == 1619511344) {
+    const allvoting = await GetAllVoting();
+
+    CreateVoting(
+      allvoting.length,
+      [{ text: "Voting 1" }, { text: "Voting 2" }],
+      "TestTitle2",
+      "TestText2",
+      photo.logovoting
+    );
+  }
+});
+
+bot.on("callback_query", async (msg) => {
+  const data = msg.data ? JSON.parse(msg.data) : {};
+  const chatid = msg.from.id;
+  const chatid2 = msg.message?.chat.id;
+  const messageid = msg.message?.message_id;
+  const lang_code = msg.from?.language_code == "ru" ? "ru" : "eng";
+  const idcallback = msg.id;
+
+  if (data.method == "tonkeeper_connect") {
+    Tonkeeper(chatid, lang_code, messageid);
+  } else if (data.method == "start") {
+    Start(chatid, lang_code, messageid);
+  } else if (data.method == "connectwallet") {
+    Wallet(chatid, lang_code, messageid);
+  } else if (data.method == "unconnectwallet") {
+    const connector = getConnector(chatid);
+
+    await connector.restoreConnection();
+
+    if (connector.connected) {
+      await connector.disconnect();
+    }
+
+    Start(chatid, lang_code, messageid);
+  } else if (data.method == "votingerror") {
+    bot.answerCallbackQuery({
+      callback_query_id: idcallback,
+      text: lang.notconnect[lang_code],
+    });
+  } else if (data.method == "voting") {
+    VotingAll(chatid, lang_code, messageid);
+  } else if (data.method == "votingitems") {
+    Voting(chatid, lang_code, messageid, data.votingid);
+  } else if (data.method == "votingresponse") {
+    const connector = getConnector(chatid);
+
+    await connector.restoreConnection();
+
+    if (connector.connected) {
+      const adressuser = toUserFriendlyAddress(
+        connector.wallet!.account.address,
+        connector.wallet!.account.chain === CHAIN.TESTNET
+      );
+
+      const response = await axios.get(
+        `https://tonapi.io/v2/accounts/${adressuser}/nfts?collection=${process.env.CollectionAdress}&limit=1000&offset=0&indirect_ownership=false`
+      );
+
+      if (response.data.nft_items.length > 0) {
+        VottingButton(
+          data.voting,
+          data.buttonid,
+          chatid,
+          lang_code,
+          messageid,
+          chatid == chatid2 ? undefined : chatid2
+        );
+      } else {
+        bot.answerCallbackQuery({
+          callback_query_id: idcallback,
+          text: lang.nftcheck[lang_code],
+        });
+      }
+    } else {
+      bot.answerCallbackQuery({
+        callback_query_id: idcallback,
+        url: `t.me/EstateCollection_bot?start=${data.voting}`,
+      });
+    }
+  }
+});

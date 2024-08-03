@@ -30,11 +30,35 @@ exports.getConnector = void 0;
 const sdk_1 = __importDefault(require("@tonconnect/sdk"));
 const storage_1 = require("./storage");
 const process = __importStar(require("process"));
-function getConnector(chatId) {
-    return new sdk_1.default({
-        manifestUrl: process.env.MANIFEST_URL,
-        storage: new storage_1.TonConnectStorage(chatId),
-    });
+const connectors = new Map();
+function getConnector(chatId, onConnectorExpired) {
+    let storedItem;
+    if (connectors.has(chatId)) {
+        storedItem = connectors.get(chatId);
+        clearTimeout(storedItem.timeout);
+    }
+    else {
+        storedItem = {
+            connector: new sdk_1.default({
+                manifestUrl: process.env.MANIFEST_URL,
+                storage: new storage_1.TonConnectStorage(chatId),
+            }),
+            onConnectorExpired: [],
+        };
+    }
+    if (onConnectorExpired) {
+        storedItem.onConnectorExpired.push(onConnectorExpired);
+    }
+    storedItem.timeout = setTimeout(() => {
+        if (connectors.has(chatId)) {
+            const storedItem = connectors.get(chatId);
+            storedItem.connector.pauseConnection();
+            storedItem.onConnectorExpired.forEach((callback) => callback(storedItem.connector));
+            connectors.delete(chatId);
+        }
+    }, Number(process.env.CONNECTOR_TTL_MS));
+    connectors.set(chatId, storedItem);
+    return storedItem.connector;
 }
 exports.getConnector = getConnector;
 //# sourceMappingURL=conenctor.js.map

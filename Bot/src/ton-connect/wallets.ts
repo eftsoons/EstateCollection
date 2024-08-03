@@ -1,6 +1,5 @@
 import {
   isWalletInfoRemote,
-  WalletInfo,
   WalletInfoRemote,
   WalletsListManager,
 } from "@tonconnect/sdk";
@@ -16,7 +15,7 @@ export async function getWallets(): Promise<WalletInfoRemote[]> {
 
 export async function getWalletInfo(
   walletAppName: string
-): Promise<WalletInfo | undefined> {
+): Promise<WalletInfoRemote | undefined> {
   const wallets = await getWallets();
   return wallets.find(
     (wallet) => wallet.appName.toLowerCase() === walletAppName.toLowerCase()
